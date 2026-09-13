@@ -60,17 +60,7 @@ fun HomeScreen() {
     val sortedTasks = tasks.sortedBy { it.isCompleted }
     val hasOngoingTask = tasks.any { !it.isCompleted }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAIPromptDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = "AI Prompt")
-            }
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()) {
         if (showAIPromptDialog) {
             AIPromptDialog(
                 onDismiss = { showAIPromptDialog = false },
@@ -82,7 +72,6 @@ fun HomeScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(paddingValues)
         ) {
 
             Box(
@@ -150,10 +139,12 @@ fun HomeScreen() {
 
             LazyColumn(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+
                 items(sortedTasks, key = { it.id }) { task ->
                     TaskStatusCard(
                         task = task,
@@ -166,9 +157,20 @@ fun HomeScreen() {
                     )
                 }
                 item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(200.dp))
                 }
             }
+        }
+
+        FloatingActionButton(
+            onClick = { showAIPromptDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 110.dp, end = 24.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = "AI Prompt")
         }
     }
 }

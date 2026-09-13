@@ -178,7 +178,6 @@ fun DurationSlider(
             value = durationMinutes.toFloat(),
             onValueChange = { onValueChange(it.toInt()) },
             valueRange = 0f..maxMinutes.toFloat(),
-            steps = 95,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
