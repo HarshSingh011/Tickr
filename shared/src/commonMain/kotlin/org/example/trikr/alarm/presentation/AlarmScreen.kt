@@ -4,19 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import org.example.trikr.alarm.domain.model.Alarm
 import org.example.trikr.di.ServiceLocator
 
 @Composable
@@ -30,98 +30,86 @@ fun AlarmScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val alarms by viewModel.alarms.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
 
-    Column(
+    // Unified premium gradient background (Blue fading to bottom)
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.background,
+            MaterialTheme.colorScheme.background
+        )
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
+            .background(backgroundBrush)
     ) {
-        Text(
-            text = "Set Task Alarm",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Title Input
-        OutlinedTextField(
-            value = uiState.title,
-            onValueChange = { viewModel.updateTitle(it) },
-            label = { Text("Task Title (e.g. Gym)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Custom Time Picker Row
-        Text("Time", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = uiState.timeH.toString(),
-                onValueChange = { viewModel.updateTime(it.toIntOrNull() ?: 0, uiState.timeM) },
-                label = { Text("Hour (0-23)") },
-                modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = uiState.timeM.toString(),
-                onValueChange = { viewModel.updateTime(uiState.timeH, it.toIntOrNull() ?: 0) },
-                label = { Text("Minute (0-59)") },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Repeat Options (Daily vs Just Today)
-        Text("Repeat", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            FilterChip(
-                selected = uiState.isDaily,
-                onClick = { viewModel.updateIsDaily(true) },
-                label = { Text("Daily") },
-                leadingIcon = if (uiState.isDaily) { { Icon(Icons.Default.Check, null) } } else null
-            )
-            FilterChip(
-                selected = !uiState.isDaily,
-                onClick = { viewModel.updateIsDaily(false) },
-                label = { Text("Just Today") },
-                leadingIcon = if (!uiState.isDaily) { { Icon(Icons.Default.Check, null) } } else null
-            )
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Frequency Options
-        Text("Snooze/Frequency: Every ${uiState.frequencyMinutes} mins", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-        Slider(
-            value = uiState.frequencyMinutes.toFloat(),
-            onValueChange = { viewModel.updateFrequency(it.toInt()) },
-            valueRange = 1f..60f,
-            steps = 59
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = { viewModel.saveAlarm() },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 48.dp, start = 24.dp, end = 24.dp)
         ) {
-            Text("Save Alarm", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Your Alarms",
+                style = TextStyle(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.White, Color.LightGray)
+                    )
+                ),
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Manage your task reminders and schedules",
+                fontSize = 16.sp,
+                color = Color.LightGray
+            )
+            Spacer(modifier = Modifier.height(32.dp))
+
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                items(alarms) { alarm ->
+                    AlarmItemCard(alarm)
+                }
+                item { Spacer(modifier = Modifier.height(150.dp)) }
+            }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-        Text("Saved Alarms", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
+        FloatingActionButton(
+            onClick = { showDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 110.dp, end = 24.dp), // Lifted above glass nav
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            elevation = FloatingActionButtonDefaults.elevation(8.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Set Alarm")
+        }
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(alarms) { alarm ->
-                AlarmItemCard(alarm)
-            }
-            item { Spacer(modifier = Modifier.height(150.dp)) }
+        if (showDialog) {
+            AlarmFormDialog(
+                uiState = uiState,
+                onTitleChange = { viewModel.updateTitle(it) },
+                onTimeChange = { h, m -> viewModel.updateTime(h, m) },
+                onIsDailyChange = { viewModel.updateIsDaily(it) },
+                onFrequencyChange = { viewModel.updateFrequency(it) },
+                onSave = {
+                    viewModel.saveAlarm()
+                    showDialog = false
+                },
+                onDismiss = { showDialog = false }
+            )
         }
     }
 }
 
-
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+fun AlarmScreenPreview() {
+    org.example.trikr.theme.TickrTheme {
+        AlarmScreen()
+    }
+}

@@ -27,21 +27,41 @@ import org.example.trikr.alarm.domain.model.Alarm
 fun AlarmItemCard(alarm: Alarm) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+            Icon(
+                imageVector = Icons.Default.Alarm,
+                contentDescription = "Alarm",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(alarm.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                val amPm = if (alarm.timeH >= 12) "PM" else "AM"
-                val h = if (alarm.timeH % 12 == 0) 12 else alarm.timeH % 12
-                val mString = alarm.timeM.toString().padStart(2, '0')
-                Text("$h:$mString $amPm | ${if (alarm.isDaily) "Daily" else "Today"} | Ring every ${alarm.frequencyMinutes}m")
+                Text(
+                    text = alarm.title, 
+                    fontSize = 18.sp, 
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${alarm.timeH.toString().padStart(2, '0')}:${alarm.timeM.toString().padStart(2, '0')} • ${if (alarm.isDaily) "Daily" else "Today"}",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = "Snooze: ${alarm.frequencyMinutes}m",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }

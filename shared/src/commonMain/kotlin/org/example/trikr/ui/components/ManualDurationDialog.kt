@@ -89,3 +89,15 @@ fun ManualDurationDialogContent(
         }
     }
 }
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+fun ManualDurationDialogPreview() {
+    org.example.trikr.theme.TickrTheme {
+        ManualDurationDialogContent(
+            initialMinutes = 90,
+            onDismiss = {},
+            onSave = {}
+        )
+    }
+}

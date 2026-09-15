@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,8 +46,9 @@ fun LoginScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                         MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                        MaterialTheme.colorScheme.background
                     )
                 )
             ),
@@ -87,9 +89,16 @@ fun LoginScreen(
 
             Text(
                 text = "Welcome to Tickr",
+                style = TextStyle(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.onBackground,
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                    )
+                ),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
 
@@ -98,7 +107,7 @@ fun LoginScreen(
             Text(
                 text = "Master your time. Own your day. Let's get started.",
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )

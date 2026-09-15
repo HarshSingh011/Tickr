@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -32,23 +34,6 @@ import org.example.trikr.ui.components.TaskStatusCard
 @Composable
 fun HomeScreen() {
     var showAIPromptDialog by remember { mutableStateOf(false) }
-    var secondsPassed by remember { mutableStateOf(10 * 3600 + 30 * 60) }
-    
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            secondsPassed++
-        }
-    }
-
-    val h = (secondsPassed / 3600) % 24
-    val m = (secondsPassed % 3600) / 60
-    val s = secondsPassed % 60
-    
-    val amPm = if (h >= 12) "PM" else "AM"
-    val displayH = if (h % 12 == 0) 12 else h % 12
-    val currentTime = "${displayH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')} $amPm"
-
     val initialTasks = listOf(
         ActiveTask(1, "Morning Workout", isCompleted = true, timeElapsedSeconds = 5400),
         ActiveTask(2, "Deep Work: Project API", isCompleted = false, timeElapsedSeconds = 3600),
@@ -56,9 +41,37 @@ fun HomeScreen() {
     )
     val tasks = remember { mutableStateListOf(*initialTasks.toTypedArray()) }
     val sortedTasks = tasks.sortedBy { it.isCompleted }
-    val hasOngoingTask = tasks.any { !it.isCompleted }
+    val ongoingTask = tasks.find { !it.isCompleted }
+    val hasOngoingTask = ongoingTask != null
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    var activeTimerSeconds by remember(ongoingTask) { 
+        mutableStateOf(ongoingTask?.timeElapsedSeconds ?: 0) 
+    }
+    
+    LaunchedEffect(ongoingTask) {
+        if (ongoingTask != null) {
+            while (true) {
+                delay(1000)
+                activeTimerSeconds++
+            }
+        }
+    }
+
+    val h = activeTimerSeconds / 3600
+    val m = (activeTimerSeconds % 3600) / 60
+    val s = activeTimerSeconds % 60
+    
+    val mainTimerText = "${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}"
+
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.background,
+            MaterialTheme.colorScheme.background
+        )
+    )
+
+    Box(modifier = Modifier.fillMaxSize().background(backgroundBrush)) {
         if (showAIPromptDialog) {
             AIPromptDialog(
                 onDismiss = { showAIPromptDialog = false },
@@ -69,36 +82,31 @@ fun HomeScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
         ) {
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                MaterialTheme.colorScheme.background
-                            )
-                        )
-                    )
                     .padding(top = 64.dp, bottom = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Current Time",
+                        text = if (hasOngoingTask) "Ongoing Task Time" else "No Active Task",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        color = Color.LightGray,
                         fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = currentTime,
+                        text = mainTimerText,
+                        style = TextStyle(
+                            brush = Brush.linearGradient(
+                                colors = listOf(Color.White, Color.LightGray)
+                            )
+                        ),
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary,
                         letterSpacing = 2.sp
                     )
                 }
@@ -106,13 +114,36 @@ fun HomeScreen() {
 
             AISuggestionCard()
 
-            Text(
-                text = "Today's Tasks",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Today's Tasks",
+                    style = TextStyle(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color.Black, Color.DarkGray)
+                        )
+                    ),
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                TextButton(
+                    onClick = { },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "View All",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
 
             if (!hasOngoingTask) {
                 Button(

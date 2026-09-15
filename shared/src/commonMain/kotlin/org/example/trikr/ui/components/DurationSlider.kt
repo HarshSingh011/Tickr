@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,9 +51,9 @@ fun DurationSlider(
             onValueChange = { onValueChange(it.toInt()) },
             valueRange = 0f..maxMinutes.toFloat(),
             colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.primaryContainer
+                thumbColor = Color.DarkGray,
+                activeTrackColor = Color.DarkGray,
+                inactiveTrackColor = Color.Gray.copy(alpha = 0.5f)
             )
         )
     }

@@ -12,6 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,26 +37,39 @@ fun UserFormScreen(
     var tasks by remember { mutableStateOf(listOf(TaskEntry(id = 0, name = "", durationMinutes = 60))) }
     var nextId by remember { mutableStateOf(1) }
 
+    // Unified premium gradient background
+    val backgroundBrush = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+            MaterialTheme.colorScheme.background,
+            MaterialTheme.colorScheme.background
+        )
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(backgroundBrush)
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.Start
     ) {
         Text(
             text = "Your Tasks",
+            style = TextStyle(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color.White, Color.LightGray)
+                )
+            ),
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 8.dp, top = 48.dp)
         )
         
         Text(
             text = "Add tasks and the duration you want to dedicate to each.",
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = Color.LightGray,
             modifier = Modifier.padding(bottom = 32.dp)
         )
         
@@ -148,14 +164,4 @@ fun UserFormScreenPreview() {
     }
 }
 
-@Preview
-@Composable
-fun ManualDurationDialogPreview() {
-    TickrTheme {
-        ManualDurationDialogContent(
-            initialMinutes = 90,
-            onDismiss = {},
-            onSave = {}
-        )
-    }
-}
+

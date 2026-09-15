@@ -31,7 +31,7 @@ fun MainScreen() {
         when (selectedTab) {
             0 -> HomeScreen()
             1 -> AlarmScreen()
-            2 -> DigitalWellbeingScreen()
+            2 -> DailyTimelineScreen()
             3 -> ProfileScreen()
         }
 
@@ -70,8 +70,8 @@ fun MainScreen() {
             NavigationBarItem(
                 selected = selectedTab == 2,
                 onClick = { selectedTab = 2 },
-                icon = { Icon(Icons.Default.Spa, contentDescription = "Wellbeing") },
-                label = { Text("Wellbeing") },
+                icon = { Icon(Icons.Default.Spa, contentDescription = "Timeline") },
+                label = { Text("Timeline") },
                 colors = NavigationBarItemDefaults.colors(
                     indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
                 )
