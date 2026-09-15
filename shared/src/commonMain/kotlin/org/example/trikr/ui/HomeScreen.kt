@@ -32,7 +32,9 @@ import org.example.trikr.ui.components.AIPromptDialog
 import org.example.trikr.ui.components.TaskStatusCard
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToTimeline: () -> Unit = {}
+) {
     var showAIPromptDialog by remember { mutableStateOf(false) }
     val initialTasks = listOf(
         ActiveTask(1, "Morning Workout", isCompleted = true, timeElapsedSeconds = 5400),
@@ -133,7 +135,7 @@ fun HomeScreen() {
                 )
                 
                 TextButton(
-                    onClick = { },
+                    onClick = onNavigateToTimeline,
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Text(

@@ -29,7 +29,7 @@ fun MainScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         // 1. Content Area (Scrolls underneath the floating nav bar)
         when (selectedTab) {
-            0 -> HomeScreen()
+            0 -> HomeScreen(onNavigateToTimeline = { selectedTab = 2 })
             1 -> AlarmScreen()
             2 -> DailyTimelineScreen()
             3 -> ProfileScreen()
