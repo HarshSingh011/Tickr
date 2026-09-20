@@ -9,6 +9,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 
+import org.example.trikr.domain.repositories.TaskRepository
+import org.koin.compose.koinInject
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,40 +36,17 @@ import kotlin.math.abs
 data class TimelineTask(
     val id: String,
     val name: String,
-    val startTime: String,
-    val endTime: String,
+    val durationSeconds: Int,
     val color: Color
 )
 
-fun getDurationMins(start: String, end: String): Int {
-    return try {
-        val startHour = start.substring(11, 13).toInt()
-        val startMin = start.substring(14, 16).toInt()
-        val endHour = end.substring(11, 13).toInt()
-        val endMin = end.substring(14, 16).toInt()
-
-        val startTotalMins = startHour * 60 + startMin
-        val endTotalMins = endHour * 60 + endMin
-        abs(endTotalMins - startTotalMins)
-    } catch (e: Exception) {
-        0
-    }
-}
-
-fun calculateDurationText(start: String, end: String): String {
-    val duration = getDurationMins(start, end)
-    val hours = duration / 60
-    val mins = duration % 60
+fun calculateDurationText(durationSeconds: Int): String {
+    val hours = durationSeconds / 3600
+    val mins = (durationSeconds % 3600) / 60
     
     return if (hours > 0 && mins > 0) "${hours}h ${mins}m"
     else if (hours > 0) "${hours}h"
     else "${mins}m"
-}
-
-fun formatTime(isoString: String): String {
-    return try {
-        isoString.substring(11, 16)
-    } catch(e: Exception) { "" }
 }
 
 @Composable
@@ -109,17 +93,11 @@ fun TaskDetailsCard(task: TimelineTask) {
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${formatTime(task.startTime)} - ${formatTime(task.endTime)}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
                 }
             }
             
             Text(
-                text = calculateDurationText(task.startTime, task.endTime),
+                text = calculateDurationText(task.durationSeconds),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -139,12 +117,12 @@ fun TimelineSingleBar(tasks: List<TimelineTask>) {
 
         var currentBottomFraction = 0f
 
-        val sortedTasks = tasks.sortedByDescending { getDurationMins(it.startTime, it.endTime) }
+        val sortedTasks = tasks.sortedByDescending { it.durationSeconds }
         val topTasks = sortedTasks.take(4)
         val otherTasks = sortedTasks.drop(4)
 
         topTasks.forEach { task ->
-            val durationMins = getDurationMins(task.startTime, task.endTime)
+            val durationMins = task.durationSeconds / 60
             if (durationMins > 0) {
                 val durationFraction = durationMins / (24f * 60f)
 
@@ -164,7 +142,7 @@ fun TimelineSingleBar(tasks: List<TimelineTask>) {
         }
 
         if (otherTasks.isNotEmpty()) {
-            val otherDurationMins = otherTasks.sumOf { getDurationMins(it.startTime, it.endTime) }
+            val otherDurationMins = otherTasks.sumOf { it.durationSeconds / 60 }
             val durationFraction = otherDurationMins / (24f * 60f)
 
             val taskBottom = (1f - currentBottomFraction) * totalHeight
@@ -232,7 +210,7 @@ fun MonthlyTimelineGraph(
                     .horizontalScroll(scrollState),
                 horizontalArrangement = Arrangement.spacedBy(spacing)
             ) {
-                for (day in 1..30) {
+                for (day in 1..31) {
                     val isSelected = selectedDay == day
                     Column(
                         modifier = Modifier
@@ -267,41 +245,38 @@ fun MonthlyTimelineGraph(
 
 @Composable
 fun DailyTimelineScreen() {
-    var selectedDay by remember { mutableStateOf(30) }
+    var selectedDay by remember { mutableStateOf(1) }
+
+    val taskRepository: TaskRepository = koinInject()
+    val monthlyData = remember { mutableStateMapOf<Int, List<TimelineTask>>() }
 
     val colorPrimary = MaterialTheme.colorScheme.primary
     val colorTertiary = MaterialTheme.colorScheme.tertiary
     val colorSecondary = MaterialTheme.colorScheme.secondary
 
-    val baseTasks = listOf(
-        TimelineTask("1", "Gym", "2026-09-15T07:00:00Z", "2026-09-15T08:00:00Z", colorPrimary),
-        TimelineTask("2", "Work", "2026-09-15T09:00:00Z", "2026-09-15T17:00:00Z", colorTertiary),
-        TimelineTask("3", "Personal Growth", "2026-09-15T18:00:00Z", "2026-09-15T20:00:00Z", colorSecondary)
-    )
-
-    val chaoticDayTasks = baseTasks + (4..15).map { i ->
-        val hour = 20 + ((i - 4) / 4)
-        val min = ((i - 4) % 4) * 15
-        val startStr = "2026-09-15T${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:00Z"
-        val endStr = "2026-09-15T${hour.toString().padStart(2, '0')}:${(min + 10).toString().padStart(2, '0')}:00Z"
+    LaunchedEffect(Unit) {
+        val todayDay = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.dayOfMonth
+        selectedDay = todayDay
         
-        TimelineTask(
-            id = i.toString(),
-            name = "Mini Task $i",
-            startTime = startStr,
-            endTime = endStr,
-            color = Color(0xFF9E9E9E)
-        )
-    }
-
-    val monthlyData = remember {
-        (1..30).associateWith { day ->
-            when {
-                day == 30 -> chaoticDayTasks
-                day % 7 == 0 -> listOf(baseTasks[0], baseTasks[2])
-                day % 5 == 0 -> listOf(baseTasks[1], baseTasks[2])
-                day % 3 == 0 -> baseTasks.drop(1)
-                else -> baseTasks
+        val result = taskRepository.getLast30DaysStats()
+        result.onSuccess { stats ->
+            val colorPalette = listOf(colorPrimary, colorTertiary, colorSecondary)
+            val grouped = stats.groupBy { 
+                try {
+                    it.date.substringAfterLast("-").toInt()
+                } catch(e: Exception) { 1 }
+            }
+            
+            monthlyData.clear()
+            grouped.forEach { (day, list) ->
+                monthlyData[day] = list.mapIndexed { index, stat ->
+                    TimelineTask(
+                        id = stat.name + day,
+                        name = stat.name,
+                        durationSeconds = stat.total_duration_seconds,
+                        color = colorPalette[index % colorPalette.size]
+                    )
+                }
             }
         }
     }
@@ -349,7 +324,7 @@ fun DailyTimelineScreen() {
             ) {
                 Column(modifier = Modifier.fillMaxSize().padding(vertical = 24.dp)) {
                     Text(
-                        text = "September",
+                        text = "Last 30 Days",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,

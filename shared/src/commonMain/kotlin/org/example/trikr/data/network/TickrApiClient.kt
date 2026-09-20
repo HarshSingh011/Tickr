@@ -18,6 +18,7 @@ import org.example.trikr.domain.models.AuthResponse
 import org.example.trikr.domain.models.GoogleLoginRequest
 import org.example.trikr.domain.models.StartTaskRequest
 import org.example.trikr.domain.models.TaskHistoryResponse
+import org.example.trikr.domain.models.DailyStatsResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
@@ -93,8 +94,8 @@ class TickrApiClient(
     suspend fun getTasksHistory(startTime: String, endTime: String): Result<TaskHistoryResponse> {
         return try {
             val token = tokenStorage.getToken() ?: return Result.failure(Exception("No auth token found"))
-            val response: HttpResponse = client.get("\$baseUrl/tasks/history") {
-                header(HttpHeaders.Authorization, "Bearer \$token")
+            val response: HttpResponse = client.get("$baseUrl/tasks/history") {
+                header(HttpHeaders.Authorization, "Bearer $token")
                 parameter("start_time", startTime)
                 parameter("end_time", endTime)
             }
@@ -102,7 +103,28 @@ class TickrApiClient(
                 val historyResponse = response.body<TaskHistoryResponse>()
                 Result.success(historyResponse)
             } else {
-                Result.failure(Exception("HTTP \${response.status.value}: \${response.status.description}"))
+                Result.failure(Exception("HTTP ${response.status.value}: ${response.status.description}"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getDailyStats(startTime: String, endTime: String, timezone: String): Result<DailyStatsResponse> {
+        return try {
+            val token = tokenStorage.getToken() ?: return Result.failure(Exception("No auth token found"))
+            val response: HttpResponse = client.get("$baseUrl/tasks/stats/daily") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                parameter("start_time", startTime)
+                parameter("end_time", endTime)
+                parameter("timezone", timezone)
+            }
+            if (response.status.isSuccess()) {
+                val statsResponse = response.body<DailyStatsResponse>()
+                Result.success(statsResponse)
+            } else {
+                Result.failure(Exception("HTTP ${response.status.value}: ${response.status.description}"))
             }
         } catch (e: Exception) {
             e.printStackTrace()

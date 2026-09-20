@@ -23,3 +23,16 @@ data class TaskHistoryResponse(
     val message: String,
     val tasks: List<TaskDto>
 )
+
+@Serializable
+data class DailyStatDto(
+    val date: String,
+    val name: String,
+    val total_duration_seconds: Int
+)
+
+@Serializable
+data class DailyStatsResponse(
+    val message: String,
+    val daily_stats: List<DailyStatDto>
+)
