@@ -20,12 +20,67 @@ import org.example.trikr.ui.components.AIPromptDialog
 import org.example.trikr.ui.components.AISuggestionCard
 import org.example.trikr.ui.components.AppUsageCard
 import org.example.trikr.ui.components.BarChart
+import org.example.trikr.domain.repositories.TaskRepository
+import org.koin.compose.koinInject
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.minus
 
 @Composable
 fun DigitalWellbeingScreen() {
     var showAIPromptDialog by remember { mutableStateOf(false) }
 
-    // Unified premium gradient background (Blue fading to bottom)
+    val taskRepository: TaskRepository = koinInject()
+    var barChartData by remember { mutableStateOf(listOf<Pair<String, Float>>()) }
+    var topTasks by remember { mutableStateOf(listOf<Pair<String, Int>>()) }
+
+    LaunchedEffect(Unit) {
+        val result = taskRepository.getLast30DaysStats()
+        result.onSuccess { stats ->
+            val tz = TimeZone.currentSystemDefault()
+            val now = Clock.System.now()
+            
+            val last7Days = (6 downTo 0).map { i ->
+                now.minus(i, DateTimeUnit.DAY, tz).toLocalDateTime(tz).date
+            }
+            
+            val statsMap = stats.groupBy { it.date }
+            
+            val weeklyData = last7Days.map { date ->
+                val dateStr = date.toString() // YYYY-MM-DD
+                val dayStats = statsMap[dateStr] ?: emptyList()
+                val totalSeconds = dayStats.sumOf { it.total_duration_seconds }
+                val totalHours = totalSeconds / 3600f
+                val dayName = date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+                dayName to totalHours
+            }
+            
+            if (weeklyData.all { it.second == 0f }) {
+                 // if all 0, provide dummy axes but keep 0 values
+                 barChartData = last7Days.map { date -> 
+                    val dayName = date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+                    dayName to 0f
+                 }
+            } else {
+                barChartData = weeklyData
+            }
+            
+            val aggregatedTasks = mutableMapOf<String, Int>()
+            last7Days.forEach { date ->
+                val dateStr = date.toString()
+                statsMap[dateStr]?.forEach { stat ->
+                    aggregatedTasks[stat.name] = (aggregatedTasks[stat.name] ?: 0) + stat.total_duration_seconds
+                }
+            }
+            topTasks = aggregatedTasks.entries
+                .sortedByDescending { it.value }
+                .take(3)
+                .map { it.key to (it.value / 60) } 
+        }
+    }
+
     val backgroundBrush = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
@@ -75,16 +130,6 @@ fun DigitalWellbeingScreen() {
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            
-            val dummyData = listOf(
-                "Mon" to 3.5f,
-                "Tue" to 4.2f,
-                "Wed" to 2.8f,
-                "Thu" to 5.1f,
-                "Fri" to 3.9f,
-                "Sat" to 1.5f,
-                "Sun" to 2.0f
-            )
 
             Card(
                 modifier = Modifier.fillMaxWidth().height(250.dp),
@@ -94,27 +139,35 @@ fun DigitalWellbeingScreen() {
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
-                BarChart(
-                    data = dummyData,
-                    modifier = Modifier.fillMaxSize().padding(20.dp),
-                    barColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                )
+                if (barChartData.isNotEmpty()) {
+                    BarChart(
+                        data = barChartData,
+                        modifier = Modifier.fillMaxSize().padding(20.dp),
+                        barColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             // App Usage Section
             Text(
-                text = "App Usage",
+                text = "Top Activities",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(16.dp))
             
-            AppUsageCard(appName = "Instagram", durationMinutes = 85, iconColor = Color(0xFFE1306C))
-            AppUsageCard(appName = "YouTube", durationMinutes = 120, iconColor = Color(0xFFFF0000))
-            AppUsageCard(appName = "Chrome", durationMinutes = 45, iconColor = Color(0xFF4285F4))
+            val colors = listOf(Color(0xFFE1306C), Color(0xFFFF0000), Color(0xFF4285F4))
+            
+            if (topTasks.isEmpty()) {
+                Text("No activities recorded this week.", color = Color.LightGray, fontSize = 14.sp)
+            } else {
+                topTasks.forEachIndexed { index, pair ->
+                    AppUsageCard(appName = pair.first, durationMinutes = pair.second, iconColor = colors[index % colors.size])
+                }
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 
