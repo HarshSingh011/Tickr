@@ -7,6 +7,8 @@ import org.example.trikr.ui.SplashScreen
 import org.example.trikr.ui.LoginScreen
 import org.example.trikr.ui.MainScreen
 import org.example.trikr.ui.UserFormScreen
+import org.koin.compose.KoinApplication
+import org.example.trikr.di.appModule
 
 enum class Screen {
     SPLASH,
@@ -20,7 +22,10 @@ enum class Screen {
 fun App() {
     var currentScreen by remember { mutableStateOf(Screen.SPLASH) }
 
-    TickrTheme {
+    KoinApplication(application = {
+        modules(appModule)
+    }) {
+        TickrTheme {
         when (currentScreen) {
             Screen.SPLASH -> {
                 SplashScreen(
@@ -29,7 +34,9 @@ fun App() {
             }
             Screen.LOGIN -> {
                 LoginScreen(
-                    onGoogleLoginClick = { currentScreen = Screen.USER_FORM }
+                    onGoogleLoginSuccess = { 
+                        currentScreen = Screen.USER_FORM 
+                    }
                 )
             }
             Screen.USER_FORM -> {
@@ -39,6 +46,7 @@ fun App() {
             }
             Screen.MAIN -> {
                 MainScreen()
+                }
             }
         }
     }

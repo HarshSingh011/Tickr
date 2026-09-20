@@ -25,9 +25,14 @@ import org.jetbrains.compose.resources.painterResource
 import trikr.shared.generated.resources.Res
 import trikr.shared.generated.resources.ic_google
 
+import kotlinx.coroutines.launch
+import org.example.trikr.auth.rememberGoogleAuthClient
+import org.example.trikr.domain.repositories.AuthRepository
+import org.koin.compose.koinInject
+
 @Composable
 fun LoginScreen(
-    onGoogleLoginClick: () -> Unit
+    onGoogleLoginSuccess: () -> Unit
 ) {
 
     val infiniteTransition = rememberInfiniteTransition()
@@ -39,6 +44,13 @@ fun LoginScreen(
             repeatMode = RepeatMode.Reverse
         )
     )
+
+    val authClient = rememberGoogleAuthClient()
+    val scope = rememberCoroutineScope()
+    val authRepository: AuthRepository = koinInject()
+    
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -115,8 +127,38 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(64.dp))
 
 
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             Surface(
-                onClick = onGoogleLoginClick,
+                onClick = { 
+                    if (isLoading) return@Surface
+                    scope.launch {
+                        isLoading = true
+                        errorMessage = null
+                        val token = authClient.signIn()
+                        if (token != null) {
+                            val result = authRepository.loginWithGoogle(token)
+                            result.onSuccess {
+                                isLoading = false
+                                onGoogleLoginSuccess()
+                            }.onFailure { e ->
+                                isLoading = false
+                                errorMessage = "Login failed: \${e.message}"
+                            }
+                        } else {
+                            isLoading = false
+                            errorMessage = "Google Sign-In failed or was cancelled"
+                        }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
@@ -130,18 +172,26 @@ fun LoginScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Image(
-                        painter = painterResource(Res.drawable.ic_google),
-                        contentDescription = "Google Logo",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Continue with Google",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(Res.drawable.ic_google),
+                            contentDescription = "Google Logo",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Continue with Google",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
@@ -153,7 +203,7 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     TickrTheme {
         LoginScreen(
-            onGoogleLoginClick = {}
+            onGoogleLoginSuccess = {}
         )
     }
 }
